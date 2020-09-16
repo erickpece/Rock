@@ -658,16 +658,7 @@ namespace Rock.Web.Cache
         /// <returns></returns>
         public static List<AttributeCache> GetByEntityTypeQualifier( int? entityTypeId, string entityQualifierColumn, string entityQualifierValue, bool includeInactive )
         {
-            var query = All();
-
-            if ( entityTypeId.HasValue && entityTypeId != 0 )
-            {
-                query = query.Where( t => t.EntityTypeId == entityTypeId ).ToList();
-            }
-            else
-            {
-                query = query.Where( t => !t.EntityTypeId.HasValue ).ToList();
-            }
+            var query = GetByEntity( entityTypeId );
 
             if ( string.IsNullOrWhiteSpace( entityQualifierColumn ) )
             {
@@ -687,12 +678,15 @@ namespace Rock.Web.Cache
                 query = query.Where( t => t.EntityTypeQualifierValue == entityQualifierValue ).ToList();
             }
 
+            var attributeIds = query.SelectMany( t => t.AttributeIds );
+            var attributes = attributeIds.Select( Get ).ToList();
+
             if ( !includeInactive )
             {
-                query = query.Where( a => a.IsActive == true ).ToList();
+                attributes = attributes.Where( a => a.IsActive == true ).ToList();
             }
 
-            return query;
+            return attributes;
         }
 
         /// <summary>

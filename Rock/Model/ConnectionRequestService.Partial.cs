@@ -116,34 +116,20 @@ namespace Rock.Model
         /// </summary>
         /// <param name="currentPersonAliasId">The current person alias identifier.</param>
         /// <param name="connectionOpportunityId">The connection opportunity identifier.</param>
-        /// <param name="campusId">The campus identifier.</param>
-        /// <param name="connectorPersonAliasId">The connector person alias identifier.</param>
-        /// <param name="requesterPersonAliasId">The requester person alias identifier.</param>
-        /// <param name="minDate">The minimum date.</param>
-        /// <param name="maxDate">The maximum date.</param>
-        /// <param name="statusIds">The status ids.</param>
-        /// <param name="connectionStates">The connection states.</param>
-        /// <param name="lastActivityTypeIds">The last activity type ids.</param>
+        /// <param name="args">The arguments.</param>
         /// <param name="statusIconsTemplate">The status icons template.</param>
-        /// <param name="sortProperty">The sort property.</param>
         /// <param name="maxRequestsPerStatus">The maximum requests per status.</param>
         /// <returns></returns>
         /// <exception cref="ArgumentException">The connection type did not resolve</exception>
         public List<ConnectionStatusViewModel> GetConnectionBoardStatusViewModels(
             int currentPersonAliasId,
             int connectionOpportunityId,
-            int? campusId,
-            int? connectorPersonAliasId,
-            int? requesterPersonAliasId,
-            DateTime? minDate,
-            DateTime? maxDate,
-            List<int> statusIds,
-            List<string> connectionStates,
-            List<int> lastActivityTypeIds,
-            string statusIconsTemplate,
-            ConnectionRequestViewModelSortProperty? sortProperty = null,
+            ConnectionRequestViewModelQueryArgs args,
+            string statusIconsTemplate = null,
             int? maxRequestsPerStatus = null )
         {
+            ValidateArgs( args );
+
             var rockContext = Context as RockContext;
             var connectionOpportunityService = new ConnectionOpportunityService( rockContext );
             var personAliasService = new PersonAliasService( rockContext );
@@ -165,15 +151,7 @@ namespace Rock.Model
             var connectionRequestViewModelQuery = GetConnectionRequestViewModelQuery(
                 currentPersonAliasId,
                 connectionOpportunityId,
-                campusId,
-                connectorPersonAliasId,
-                minDate,
-                maxDate,
-                requesterPersonAliasId,
-                statusIds,
-                connectionStates,
-                lastActivityTypeIds,
-                sortProperty );
+                args );
 
             // Check and apply security
             var currentPerson = personAliasService.GetPerson( currentPersonAliasId );
@@ -209,9 +187,9 @@ namespace Rock.Model
                     HighlightColor = cs.HighlightColor
                 } );
 
-            if ( statusIds?.Any() == true )
+            if ( args.StatusIds?.Any() == true )
             {
-                connectionStatusQuery = connectionStatusQuery.Where( cs => statusIds.Contains( cs.Id ) );
+                connectionStatusQuery = connectionStatusQuery.Where( cs => args.StatusIds.Contains( cs.Id ) );
             }
 
             var connectionStatusViewModels = connectionStatusQuery.ToList();
@@ -255,47 +233,25 @@ namespace Rock.Model
         /// </summary>
         /// <param name="currentPersonAliasId">The current person alias identifier.</param>
         /// <param name="connectionRequestId">The connection request identifier.</param>
-        /// <param name="campusId">The campus identifier.</param>
-        /// <param name="connectorPersonAliasId">The connector person alias identifier.</param>
-        /// <param name="requesterPersonAliasId">The requester person alias identifier.</param>
-        /// <param name="minDate">The minimum date.</param>
-        /// <param name="maxDate">The maximum date.</param>
-        /// <param name="statusIds">The status ids.</param>
-        /// <param name="connectionStates">The connection states.</param>
-        /// <param name="lastActivityTypeIds">The last activity type ids.</param>
+        /// <param name="args">The arguments.</param>
         /// <param name="statusIconsTemplate">The status icons template.</param>
         /// <returns></returns>
+        /// <exception cref="ArgumentException">An args object is required</exception>
         public ConnectionRequestViewModel GetConnectionRequestViewModel(
             int currentPersonAliasId,
             int connectionRequestId,
-            string statusIconsTemplate,
-            int? campusId = null,
-            int? connectorPersonAliasId = null,
-            int? requesterPersonAliasId = null,
-            DateTime? minDate = null,
-            DateTime? maxDate = null,
-            List<int> statusIds = null,
-            List<string> connectionStates = null,
-            List<int> lastActivityTypeIds = null )
+            ConnectionRequestViewModelQueryArgs args,
+            string statusIconsTemplate = null )
         {
+            ValidateArgs( args );
+
             var connectionOpportunityId = Queryable()
                 .AsNoTracking()
                 .Where( cr => cr.Id == connectionRequestId )
                 .Select( cr => cr.ConnectionOpportunityId )
                 .FirstOrDefault();
 
-            var query = GetConnectionRequestViewModelQuery(
-                currentPersonAliasId,
-                connectionOpportunityId,
-                campusId,
-                connectorPersonAliasId,
-                minDate,
-                maxDate,
-                requesterPersonAliasId,
-                statusIds,
-                connectionStates,
-                lastActivityTypeIds );
-
+            var query = GetConnectionRequestViewModelQuery( currentPersonAliasId, connectionOpportunityId, args );
             var viewModel = query.FirstOrDefault( cr => cr.Id == connectionRequestId );
 
             if ( viewModel == null )
@@ -319,29 +275,16 @@ namespace Rock.Model
         /// </summary>
         /// <param name="currentPersonAliasId">The current person alias identifier.</param>
         /// <param name="connectionOpportunityId">The connection opportunity identifier.</param>
-        /// <param name="campusId">The campus identifier.</param>
-        /// <param name="connectorPersonAliasId">The connector person alias identifier.</param>
-        /// <param name="minDate">The minimum date.</param>
-        /// <param name="maxDate">The maximum date.</param>
-        /// <param name="requesterPersonAliasId">The requester person alias identifier.</param>
-        /// <param name="statusIds">The status ids.</param>
-        /// <param name="connectionStates">The connection states.</param>
-        /// <param name="lastActivityTypeIds">The last activity type ids.</param>
-        /// <param name="sortProperty">The sort property.</param>
+        /// <param name="args">The arguments.</param>
         /// <returns></returns>
+        /// <exception cref="ArgumentException">An args object is required</exception>
         public IQueryable<ConnectionRequestViewModel> GetConnectionRequestViewModelQuery(
             int currentPersonAliasId,
             int connectionOpportunityId,
-            int? campusId = null,
-            int? connectorPersonAliasId = null,
-            DateTime? minDate = null,
-            DateTime? maxDate = null,
-            int? requesterPersonAliasId = null,
-            List<int> statusIds = null,
-            List<string> connectionStates = null,
-            List<int> lastActivityTypeIds = null,
-            ConnectionRequestViewModelSortProperty? sortProperty = null )
+            ConnectionRequestViewModelQueryArgs args )
         {
+            ValidateArgs( args );
+
             var currentDateTime = RockDateTime.Now;
             var midnightToday = RockDateTime.Today.AddDays( 1 );
 
@@ -361,7 +304,7 @@ namespace Rock.Model
                 .AsNoTracking()
                 .Where( cr =>
                     cr.ConnectionOpportunityId == connectionOpportunityId &&
-                    ( !campusId.HasValue || campusId.Value == cr.CampusId.Value ) )
+                    ( !args.CampusId.HasValue || args.CampusId.Value == cr.CampusId.Value ) )
                 .Select( cr => new ConnectionRequestViewModel
                 {
                     Id = cr.Id,
@@ -447,50 +390,50 @@ namespace Rock.Model
                 } );
 
             // Filter by connector
-            if ( connectorPersonAliasId.HasValue )
+            if ( args.ConnectorPersonAliasId.HasValue )
             {
-                connectionRequestsQuery = connectionRequestsQuery.Where( cr => cr.ConnectorPersonAliasId == connectorPersonAliasId );
+                connectionRequestsQuery = connectionRequestsQuery.Where( cr => cr.ConnectorPersonAliasId == args.ConnectorPersonAliasId );
             }
 
             // Filter by date range
-            if ( minDate.HasValue )
+            if ( args.MinDate.HasValue )
             {
-                connectionRequestsQuery = connectionRequestsQuery.Where( cr => cr.LastActivityDate >= minDate.Value );
+                connectionRequestsQuery = connectionRequestsQuery.Where( cr => cr.LastActivityDate >= args.MinDate.Value );
             }
 
-            if ( maxDate.HasValue )
+            if ( args.MaxDate.HasValue )
             {
-                connectionRequestsQuery = connectionRequestsQuery.Where( cr => cr.LastActivityDate <= maxDate.Value );
+                connectionRequestsQuery = connectionRequestsQuery.Where( cr => cr.LastActivityDate <= args.MaxDate.Value );
             }
 
             // Filter requester
-            if ( requesterPersonAliasId.HasValue )
+            if ( args.RequesterPersonAliasId.HasValue )
             {
-                connectionRequestsQuery = connectionRequestsQuery.Where( cr => cr.PersonAliasId == requesterPersonAliasId.Value );
+                connectionRequestsQuery = connectionRequestsQuery.Where( cr => cr.PersonAliasId == args.RequesterPersonAliasId.Value );
             }
 
             // Filter statuses
-            if ( statusIds?.Any() == true )
+            if ( args.StatusIds?.Any() == true )
             {
-                connectionRequestsQuery = connectionRequestsQuery.Where( cr => statusIds.Contains( cr.StatusId ) );
+                connectionRequestsQuery = connectionRequestsQuery.Where( cr => args.StatusIds.Contains( cr.StatusId ) );
             }
 
             // Filter state
-            if ( connectionStates?.Any() == true )
+            if ( args.ConnectionStates?.Any() == true )
             {
-                connectionRequestsQuery = connectionRequestsQuery.Where( cr => connectionStates.Contains( cr.ConnectionState.ToString() ) );
+                connectionRequestsQuery = connectionRequestsQuery.Where( cr => args.ConnectionStates.Contains( cr.ConnectionState.ToString() ) );
             }
 
             // Filter last activity
-            if ( lastActivityTypeIds?.Any() == true )
+            if ( args.LastActivityTypeIds?.Any() == true )
             {
                 connectionRequestsQuery = connectionRequestsQuery.Where( cr =>
                     cr.LastActivityTypeId.HasValue &&
-                    lastActivityTypeIds.Contains( cr.LastActivityTypeId.Value ) );
+                    args.LastActivityTypeIds.Contains( cr.LastActivityTypeId.Value ) );
             }
 
             // Sort by the selected sorting property
-            switch ( sortProperty )
+            switch ( args.SortProperty )
             {
                 case ConnectionRequestViewModelSortProperty.Requestor:
                     connectionRequestsQuery = connectionRequestsQuery
@@ -625,15 +568,79 @@ namespace Rock.Model
             return template.ResolveMergeFields( mergeFields );
         }
 
+        /// <summary>
+        /// Validates the arguments.
+        /// </summary>
+        /// <param name="args">The arguments.</param>
+        /// <exception cref="ArgumentException">An args object is required</exception>
+        private void ValidateArgs( ConnectionRequestViewModelQueryArgs args )
+        {
+            if ( args == null )
+            {
+                throw new ArgumentException( "An args object is required" );
+            }
+        }
+
         #endregion Connection Board Helper Methods
     }
 
     #region Models
 
     /// <summary>
+    /// View Model Query Args
+    /// </summary>
+    public sealed class ConnectionRequestViewModelQueryArgs
+    {
+        /// <summary>
+        /// Gets or sets the campus identifier.
+        /// </summary>
+        public int? CampusId { get; set; }
+
+        /// <summary>
+        /// Gets or sets the connector person alias identifier.
+        /// </summary>
+        public int? ConnectorPersonAliasId { get; set; }
+
+        /// <summary>
+        /// Gets or sets the minimum date.
+        /// </summary>
+        public DateTime? MinDate { get; set; }
+
+        /// <summary>
+        /// Gets or sets the maximum date.
+        /// </summary>
+        public DateTime? MaxDate { get; set; }
+
+        /// <summary>
+        /// Gets or sets the requester person alias identifier.
+        /// </summary>
+        public int? RequesterPersonAliasId { get; set; }
+
+        /// <summary>
+        /// Gets or sets the status ids.
+        /// </summary>
+        public List<int> StatusIds { get; set; }
+
+        /// <summary>
+        /// Gets or sets the connection states.
+        /// </summary>
+        public List<string> ConnectionStates { get; set; }
+
+        /// <summary>
+        /// Gets or sets the last activity type ids.
+        /// </summary>
+        public List<int> LastActivityTypeIds { get; set; }
+
+        /// <summary>
+        /// Gets or sets the sort property.
+        /// </summary>
+        public ConnectionRequestViewModelSortProperty? SortProperty { get; set; }
+    }
+
+    /// <summary>
     /// Connection Status View Model (columns)
     /// </summary>
-    public class ConnectionStatusViewModel
+    public sealed class ConnectionStatusViewModel
     {
         /// <summary>
         /// Gets or sets the identifier.
@@ -664,7 +671,7 @@ namespace Rock.Model
     /// <summary>
     /// Connection Request View Model (cards)
     /// </summary>
-    public class ConnectionRequestViewModel
+    public sealed class ConnectionRequestViewModel
     {
         #region Properties
 
@@ -1192,7 +1199,7 @@ namespace Rock.Model
     /// <summary>
     /// Workflow Check View Model
     /// </summary>
-    public class WorkflowCheckViewModel
+    public sealed class WorkflowCheckViewModel
     {
         /// <summary>
         /// Converts to statusname.

@@ -416,9 +416,9 @@
                     <div class="panel-collapsable">
                         <div class="panel-toolbar d-flex flex-wrap flex-sm-nowrap justify-content-between">
                             <div class="d-block">
-                                <div class="d-inline-block btn-group-mega">
-                                    <button type="button" class="btn btn-xs dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><i class="fa fa-plug"></i>Opportunities</button>
-                                    <ul class="dropdown-menu dropdown-menu-mega">
+                                <div class="d-inline-block btn-group-mega js-btn-group-mega">
+                                    <button type="button" class="btn btn-xs dropdown-toggle js-dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><i class="fa fa-plug"></i>Opportunities</button>
+                                    <ul class="dropdown-menu dropdown-menu-mega js-dropdown-menu-mega">
                                         <li runat="server" id="liFavoritesHeader" class="dropdown-header">
                                             <i class="fa fa-star"></i>
                                             Favorites
@@ -596,10 +596,10 @@
             <asp:UpdatePanel ID="upnlBoardView" runat="server" UpdateMode="Conditional">
                 <ContentTemplate>
                     <div class="drag-scroll-zone-container">
-                        <div class="panel-body p-0 overflow-scroll board-column-container cursor-grab dragscroll">
+                        <div class="panel-body p-0 overflow-scroll board-column-container cursor-grab dragscroll js-dragscroll">
                             <div class="d-flex flex-row w-100 h-100 js-column-container"></div>
-                            <div class="drag-scroll-zone drag-scroll-zone-left"></div>
-                            <div class="drag-scroll-zone drag-scroll-zone-right"></div>
+                            <div class="js-drag-scroll-zone js-drag-scroll-zone-left drag-scroll-zone drag-scroll-zone-left"></div>
+                            <div class="js-drag-scroll-zone js-drag-scroll-zone-right drag-scroll-zone drag-scroll-zone-right"></div>
                         </div>
                     </div>
                 </ContentTemplate>
@@ -904,7 +904,7 @@
     </ContentTemplate>
 </asp:UpdatePanel>
 
-<div id="connection-board-loading" role="status" aria-hidden="true" style="display: none;">
+<div class="js-connection-board-loading" role="status" aria-hidden="true" style="display: none;">
     <div class="updateprogress-status">
         <div class="spinner">
             <div class="rect1"></div><div class="rect2"></div><div class="rect3"></div><div class="rect4"></div><div class="rect5"></div>
@@ -916,7 +916,7 @@
 <asp:UpdatePanel ID="upnlJavaScript" runat="server" UpdateMode="Conditional">
 </asp:UpdatePanel>
 
-<script id="template-column" type="text/template">
+<script id="js-template-column" type="text/template">
     <div class="board-column">
         <div class="board-heading mt-3">
             <div class="d-flex justify-content-between">
@@ -927,21 +927,21 @@
         </div>
         <div class="board-cards js-card-container" data-status-id="{{Id}}">
         </div>
-        <div class="drag-scroll-zone drag-scroll-zone-top"></div>
-        <div class="drag-scroll-zone drag-scroll-zone-bottom"></div>
+        <div class="js-drag-scroll-zone js-drag-scroll-zone-top drag-scroll-zone drag-scroll-zone-top"></div>
+        <div class="js-drag-scroll-zone js-drag-scroll-zone-bottom drag-scroll-zone drag-scroll-zone-bottom"></div>
     </div>
 </script>
 
-<script id="template-column-sentry" type="text/template">
+<script id="js-template-column-sentry" type="text/template">
     <div class="board-column-sentry text-muted small">
         <p><strong>More requests exist</strong></p>
         <p>Please adjust sorting, use filters, or even use the grid mode to interact with them.</p>
     </div>
 </script>
 
-<script id="template-card" type="text/template">
-    <div class="board-card" data-request-id="{{Id}}">
-        <div class="board-card-content">
+<script id="js-template-card" type="text/template">
+    <div class="board-card js-board-card" data-request-id="{{Id}}">
+        <div class="board-card-content js-board-card-content">
             <div class="d-flex justify-content-between">
                 {{StatusIconsHtml}}
                 {{CampusHtml}}

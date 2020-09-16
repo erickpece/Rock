@@ -128,7 +128,16 @@ namespace RockWeb.Blocks.Connection
 
         #region Defaults
 
+        /// <summary>
+        /// The default maximum cards per status column
+        /// </summary>
         private const int DefaultMaxCards = 100;
+
+        /// <summary>
+        /// The initial count of activities to show in grid. There is a "show more" button for the user to
+        /// click if the actual count exceeds this.
+        /// </summary>
+        private const int InitialActivitiesToShowInGrid = 10;
 
         private const string StatusTemplateDefaultValue = @"
 <div class='pull-left badge-legend padding-r-md'>
@@ -1221,7 +1230,7 @@ namespace RockWeb.Blocks.Connection
                         connectionOpportunity.PublicName,
                         ppRequestModalAddEditModePerson.PersonName.TrimEnd() );
 
-                    ShowRequestModalNotification( "Possible Duplicate", text, NotificationBoxType.Warning );
+                    ShowRequestModalNotification( text, NotificationBoxType.Warning );
                 }
                 else
                 {
@@ -1273,12 +1282,12 @@ namespace RockWeb.Blocks.Connection
                             "{0} does not currently meet the requirements for the selected group/role and will not be able to be placed.",
                             person.NickName );
 
-                        ShowRequestModalNotification( "Oops", text, NotificationBoxType.Validation );
+                        ShowRequestModalNotification( text, NotificationBoxType.Validation );
                     }
                     else
                     {
                         var text = "This person does not currently meet the requirements for this group and will not be able to be placed.";
-                        ShowRequestModalNotification( "Oops", text, NotificationBoxType.Validation );
+                        ShowRequestModalNotification( text, NotificationBoxType.Validation );
                     }
                 }
             }
@@ -2158,9 +2167,12 @@ namespace RockWeb.Blocks.Connection
             }
             else
             {
-                var viewModels = activityViewModelQuery.Take( 11 ).ToList();
-                gRequestModalViewModeActivities.DataSource = viewModels.Take( 10 );
-                lbRequestModalViewModeShowAllActivities.Visible = viewModels.Count > 10;
+                // Query for one more than the number to show. If we get that extra 1, then we know there are more
+                // and we will show the "show more" button. This is to avoid doing two queries to get the 10
+                // activities and then separately get the total count.
+                var viewModels = activityViewModelQuery.Take( InitialActivitiesToShowInGrid + 1 ).ToList();
+                gRequestModalViewModeActivities.DataSource = viewModels.Take( InitialActivitiesToShowInGrid );
+                lbRequestModalViewModeShowAllActivities.Visible = viewModels.Count > InitialActivitiesToShowInGrid;
             }
 
             gRequestModalViewModeActivities.DataBind();
@@ -2842,7 +2854,7 @@ namespace RockWeb.Blocks.Connection
                 var text = string.Format(
                     "An error occurred in one or more of the requirement calculations: <br /> {0}",
                     requirementsWithErrors.AsDelimited( "<br />" ) );
-                ShowRequestModalNotification( "Requirement calculation error", text, NotificationBoxType.Danger );
+                ShowRequestModalNotification( text, NotificationBoxType.Danger );
             }
 
             btnRequestModalViewModeConnect.Enabled = passedAllRequirements;
@@ -3573,12 +3585,10 @@ namespace RockWeb.Blocks.Connection
         /// <summary>
         /// Shows the error on the request modal.
         /// </summary>
-        /// <param name="title">The title.</param>
         /// <param name="text">The text.</param>
         /// <param name="type">The type.</param>
-        private void ShowRequestModalNotification( string title, string text, NotificationBoxType type )
+        private void ShowRequestModalNotification( string text, NotificationBoxType type )
         {
-            nbRequestModalNotificationBox.Title = title;
             nbRequestModalNotificationBox.NotificationBoxType = type;
             nbRequestModalNotificationBox.Text = text;
             nbRequestModalNotificationBox.Visible = true;
@@ -3759,7 +3769,6 @@ namespace RockWeb.Blocks.Connection
                             {
                                 okToConnect = false;
                                 ShowRequestModalNotification(
-                                    "Unmet Requirements",
                                     "Group Requirements have not been met. Please verify all of the requirements.",
                                     NotificationBoxType.Validation );
                                 break;
@@ -4061,6 +4070,7 @@ namespace RockWeb.Blocks.Connection
             _connectionRequestViewModel = connectionRequestService.GetConnectionRequestViewModel(
                 CurrentPersonAliasId.Value,
                 ConnectionRequestId.Value,
+                new ConnectionRequestViewModelQueryArgs(),
                 GetConnectionRequestStatusIconsTemplate() );
 
             return _connectionRequestViewModel;
@@ -4288,15 +4298,18 @@ namespace RockWeb.Blocks.Connection
             return connectionRequestService.GetConnectionRequestViewModelQuery(
                 CurrentPersonAliasId ?? 0,
                 ConnectionOpportunityId ?? 0,
-                CampusId,
-                ConnectorPersonAliasId,
-                minDate,
-                maxDate,
-                requesterPersonAliasId,
-                statuses,
-                states,
-                activityTypeIds,
-                CurrentSortProperty );
+                new ConnectionRequestViewModelQueryArgs
+                {
+                    CampusId = CampusId,
+                    ConnectorPersonAliasId = ConnectorPersonAliasId,
+                    MinDate = minDate,
+                    MaxDate = maxDate,
+                    RequesterPersonAliasId = requesterPersonAliasId,
+                    StatusIds = statuses,
+                    ConnectionStates = states,
+                    LastActivityTypeIds = activityTypeIds,
+                    SortProperty = CurrentSortProperty
+                } );
         }
 
         /// <summary>

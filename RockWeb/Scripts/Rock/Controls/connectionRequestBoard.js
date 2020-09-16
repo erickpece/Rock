@@ -11,11 +11,11 @@
         // Region: Loading Helpers
         //
         const showLoading = function (callback) {
-            $('#connection-board-loading').show(callback);
+            $('.js-connection-board-loading').show(callback);
         };
 
         const hideLoading = function () {
-            $('#connection-board-loading').hide();
+            $('.js-connection-board-loading').hide();
         };
 
         //
@@ -63,7 +63,7 @@
         //
         const getColumnTemplate = function () {
             if (!_columnTemplate) {
-                _columnTemplate = $('#template-column').html();
+                _columnTemplate = $('#js-template-column').html();
             }
 
             return _columnTemplate;
@@ -76,7 +76,7 @@
 
         const getCardTemplate = function () {
             if (!_cardTemplate) {
-                _cardTemplate = $('#template-card').html();
+                _cardTemplate = $('#js-template-card').html();
             }
 
             return _cardTemplate;
@@ -89,7 +89,7 @@
 
         const getSentryTemplate = function () {
             if (!_sentryTemplate) {
-                _sentryTemplate = $('#template-column-sentry').html();
+                _sentryTemplate = $('#js-template-column-sentry').html();
             }
 
             return _sentryTemplate;
@@ -331,7 +331,7 @@
         };
 
         const refreshCard = function (connectionRequestId, requestViewModel) {
-            const $oldCard = $('.board-card[data-request-id=' + connectionRequestId + ']');
+            const $oldCard = $('[data-request-id=' + connectionRequestId + ']');
 
             if (!requestViewModel) {
                 // This request is not currently visible
@@ -363,7 +363,7 @@
         };
 
         const removeCard = function (connectionRequestId) {
-            $('.board-card[data-request-id=' + connectionRequestId + ']').remove();
+            $('[data-request-id=' + connectionRequestId + ']').remove();
         };
 
         const deleteRequestAndRemoveCard = function (connectionRequestId) {
@@ -385,22 +385,22 @@
             _areOneTimeEventsInitialized = true;
 
             // Allow clicking on card to view
-            $('.js-column-container').on('click', '.board-card-content', onCardClick);
+            $('.js-column-container').on('click', '.js-board-card-content', onCardClick);
 
             // Initialize dropdown buttons
-            $('.btn-group-mega').each(function () {
+            $('.js-btn-group-mega').each(function () {
                 const $self = $(this);
-                const bottom = $self.children('.dropdown-toggle').first().position().top + $self.height();
-                $self.children('.dropdown-menu-mega').first().css('top', bottom);
+                const bottom = $self.children('.js-dropdown-toggle').first().position().top + $self.height();
+                $self.children('.js-dropdown-menu-mega').first().css('top', bottom);
             });
         };
         let _areOneTimeEventsInitialized = false;
 
         const initializeDraggingCards = function () {
-            var drake = dragula($('.board-cards, .drag-scroll-zone').get(), {
+            var drake = dragula($('.js-card-container, .js-drag-scroll-zone').get(), {
                 revertOnSpill: true,
                 moves: function (el) {
-                    return $(el).hasClass('board-card');
+                    return $(el).hasClass('js-board-card');
                 }
             });
 
@@ -413,23 +413,23 @@
             // el (card) is being dragged (not yet dropped) over container (col)
             const $container = $(container);
 
-            if (!$container.hasClass('drag-scroll-zone')) {
+            if (!$container.hasClass('js-drag-scroll-zone')) {
                 return;
             }
 
             let scrollY = 0;
             let scrollX = 0;
 
-            if ($container.hasClass('drag-scroll-zone-left')) {
+            if ($container.hasClass('js-drag-scroll-zone-left')) {
                 scrollX = -10;
             }
-            else if ($container.hasClass('drag-scroll-zone-right')) {
+            else if ($container.hasClass('js-drag-scroll-zone-right')) {
                 scrollX = 10;
             }
-            else if ($container.hasClass('drag-scroll-zone-top')) {
+            else if ($container.hasClass('js-drag-scroll-zone-top')) {
                 scrollY = -5;
             }
-            else if ($container.hasClass('drag-scroll-zone-bottom')) {
+            else if ($container.hasClass('js-drag-scroll-zone-bottom')) {
                 scrollY = 5;
             }
             else {
@@ -439,7 +439,7 @@
             clearInterval(_timer);
             _timer = setInterval(function () {
                 if (scrollX) {
-                    const $dragscroll = $('.dragscroll');
+                    const $dragscroll = $('.js-dragscroll');
                     $dragscroll.scrollLeft($dragscroll.scrollLeft() + scrollX);
                 }
                 else if (scrollY) {
@@ -468,7 +468,7 @@
             const originalIndex = Number($el.attr('data-index'));
             const requestId = $el.data('requestId');
 
-            if ($target.hasClass('drag-scroll-zone')) {
+            if ($target.hasClass('js-drag-scroll-zone')) {
                 // Put the card back out of the scroll zone
                 moveCard(requestId, oldStatusId, originalIndex);
                 return;

@@ -211,15 +211,18 @@ namespace Rock.Rest.Controllers
             return connectionRequestService.GetConnectionRequestViewModel(
                 personAliasId.Value,
                 connectionRequestId,
-                statusIconsTemplate,
-                campusId,
-                connectorPersonAliasId,
-                requesterPersonAliasId,
-                minDate,
-                maxDate,
-                delimitedStatusIds.SplitDelimitedValues().AsIntegerList(),
-                delimitedConnectionStates.SplitDelimitedValues().ToList(),
-                delimitedLastActivityTypeIds.SplitDelimitedValues().AsIntegerList() );
+                new ConnectionRequestViewModelQueryArgs
+                {
+                    CampusId = campusId,
+                    ConnectorPersonAliasId = connectorPersonAliasId,
+                    RequesterPersonAliasId = requesterPersonAliasId,
+                    MinDate = minDate,
+                    MaxDate = maxDate,
+                    StatusIds = delimitedStatusIds.SplitDelimitedValues().AsIntegerList(),
+                    ConnectionStates = delimitedConnectionStates.SplitDelimitedValues().ToList(),
+                    LastActivityTypeIds = delimitedLastActivityTypeIds.SplitDelimitedValues().AsIntegerList()
+                },
+                statusIconsTemplate );
         }
 
         /// <summary>
@@ -267,16 +270,18 @@ namespace Rock.Rest.Controllers
             var connectionStatusViewModels = connectionRequestService.GetConnectionBoardStatusViewModels(
                 personAliasId.Value,
                 connectionOpportunityId,
-                campusId,
-                connectorPersonAliasId,
-                requesterPersonAliasId,
-                minDate,
-                maxDate,
-                delimitedStatusIds.SplitDelimitedValues().AsIntegerList(),
-                delimitedConnectionStates.SplitDelimitedValues().ToList(),
-                delimitedLastActivityTypeIds.SplitDelimitedValues().AsIntegerList(),
+                new ConnectionRequestViewModelQueryArgs {
+                    CampusId = campusId,
+                    ConnectorPersonAliasId = connectorPersonAliasId,
+                    RequesterPersonAliasId = requesterPersonAliasId,
+                    MinDate = minDate,
+                    MaxDate = maxDate,
+                    StatusIds = delimitedStatusIds.SplitDelimitedValues().AsIntegerList(),
+                    ConnectionStates = delimitedConnectionStates.SplitDelimitedValues().ToList(),
+                    LastActivityTypeIds = delimitedLastActivityTypeIds.SplitDelimitedValues().AsIntegerList(),
+                    SortProperty = sortProperty
+                },
                 statusIconsTemplate,
-                sortProperty,
                 maxRequestsPerStatus );
 
             return connectionStatusViewModels;
