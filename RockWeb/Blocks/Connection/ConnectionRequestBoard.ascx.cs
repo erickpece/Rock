@@ -48,6 +48,8 @@ namespace RockWeb.Blocks.Connection
     [Category( "Connection" )]
     [Description( "Display the Connection Requests for a selected Connection Opportunity as a list or board view." )]
 
+    #region Block Attributes
+
     [IntegerField(
         "Max Cards per Column",
         DefaultIntegerValue = DefaultMaxCards,
@@ -111,13 +113,54 @@ namespace RockWeb.Blocks.Connection
         DefaultValue = Rock.SystemGuid.Page.CONNECTION_TYPES,
         Key = AttributeKey.ConfigurationPage )]
 
-    public partial class ConnectionRequestBoard : RockBlock
+    [LinkedPage(
+        "Group Detail Page",
+        Description = "Page used to display group details.",
+        IsRequired = true,
+        DefaultValue = Rock.SystemGuid.Page.GROUP_VIEWER,
+        Order = 8,
+        Key = AttributeKey.GroupDetailPage )]
+
+    [LinkedPage(
+        "SMS Link Page",
+        Description = "Page that will be linked for SMS enabled phones.",
+        Order = 9,
+        IsRequired = true,
+        DefaultValue = Rock.SystemGuid.Page.NEW_COMMUNICATION,
+        Key = AttributeKey.SmsLinkPage )]
+
+    [BadgesField(
+        "Badges",
+        Description = "The badges to display in this block.",
+        IsRequired = false,
+        Order = 10,
+        Key = AttributeKey.Badges )]
+
+    [CodeEditorField(
+        "Lava Heading Template",
+        IsRequired = false,
+        Key = AttributeKey.LavaHeadingTemplate,
+        EditorMode = CodeEditorMode.Lava,
+        Description = "The HTML Content to render above the person’s name. Includes merge fields ConnectionRequest and Person. <span class='tip tip-lava'></span>",
+        Order = 11 )]
+
+    [CodeEditorField(
+        "Lava Badge Bar",
+        IsRequired = false,
+        Key = AttributeKey.LavaBadgeBar,
+        EditorMode = CodeEditorMode.Lava,
+        Description = "The HTML Content intended to be used as a kind of custom badge bar for the connection request. Includes merge fields ConnectionRequest and Person. <span class='tip tip-lava'></span>",
+        Order = 12 )]
+
+    #endregion Block Attributes
+
+    public partial class ConnectionRequestBoard : ContextEntityBlock
     {
         /*
              Root State Diagram:
              - Card mode
              - Grid mode
-    
+
              Request Modal State Diagram (Either of the root states allows selecting a request, which opens the request modal):
              - View Mode
                  - Activity grid (default)
@@ -191,6 +234,31 @@ namespace RockWeb.Blocks.Connection
         /// </summary>
         private static class AttributeKey
         {
+            /// <summary>
+            /// The group detail page
+            /// </summary>
+            public const string GroupDetailPage = "GroupDetailPage";
+
+            /// <summary>
+            /// The SMS link page
+            /// </summary>
+            public const string SmsLinkPage = "SmsLinkPage";
+
+            /// <summary>
+            /// The badges
+            /// </summary>
+            public const string Badges = "Badges";
+
+            /// <summary>
+            /// The lava badge bar
+            /// </summary>
+            public const string LavaBadgeBar = "LavaBadgeBar";
+
+            /// <summary>
+            /// The lava heading template
+            /// </summary>
+            public const string LavaHeadingTemplate = "LavaHeadingTemplate";
+
             /// <summary>
             /// The configuration page
             /// </summary>
@@ -644,7 +712,7 @@ namespace RockWeb.Blocks.Connection
                 // been 4, 9, 12 to 1, 2, 3.  Instead we want to keep 4, 9, 12, and reapply
                 // those order values to the requests in their new order. There could be a problem
                 // if some of the orders match (like initially they are all 0). So, we do a
-                // slight adjustment top ensure uniqueness in this set. 
+                // slight adjustment top ensure uniqueness in this set.
                 var orderValues = requestsOfStatus.Select( r => r.Order ).ToList();
                 var previousValue = -1;
 
@@ -771,7 +839,29 @@ namespace RockWeb.Blocks.Connection
             btnRequestModalViewModeConnect.Visible = viewModel.CanConnect;
 
             // Bind the phone repeater
-            rRequestModalViewModePhones.DataSource = viewModel.PersonPhones;
+            var hasSmsLink = GetAttributeValue( AttributeKey.SmsLinkPage ).IsNotNullOrWhiteSpace();
+
+            rRequestModalViewModePhones.DataSource = viewModel.PersonPhones.Select( p =>
+            {
+                var smsLinkHtml = string.Empty;
+
+                if ( hasSmsLink && p.IsMessagingEnabled )
+                {
+                    var smsLink = LinkedPageUrl( AttributeKey.SmsLinkPage, new Dictionary<string, string> {
+                        { "Person", viewModel.PersonId.ToString() }
+                    } );
+
+                    smsLinkHtml = string.Format( @"<a href=""{0}""><i class=""fa fa-comments""></i></a>", smsLink );
+                }
+
+                return new
+                {
+                    p.FormattedPhoneNumber,
+                    p.PhoneType,
+                    SmsLinkHtml = smsLinkHtml
+                };
+            } );
+
             rRequestModalViewModePhones.DataBind();
 
             // Build the description list on the right side
@@ -784,27 +874,42 @@ namespace RockWeb.Blocks.Connection
                     viewModel.DaysOrWeeksSinceOpeningText ) );
             }
 
-            var placementGroupName = viewModel.GroupName.IsNullOrWhiteSpace() ? "None Assigned" : viewModel.GroupName;
+            // Placement group HTML
+            var placementGroupHtml = string.Empty;
 
-            if ( viewModel.PlacementGroupRoleId.HasValue )
+            if ( viewModel.GroupName.IsNullOrWhiteSpace() )
             {
-                var rockContext = new RockContext();
-                var service = new GroupTypeRoleService( rockContext );
-                var role = service.Get( viewModel.PlacementGroupRoleId.Value );
-
-                var roleName = role != null ? role.Name : string.Empty;
-                var statusName = viewModel.PlacementGroupMemberStatus.ConvertToStringSafe();
-
-                if ( !string.IsNullOrWhiteSpace( roleName ) || !string.IsNullOrWhiteSpace( statusName ) )
+                placementGroupHtml = "None Assigned";
+            }
+            else
+            {
+                var groupDetailPageUrl = LinkedPageUrl( AttributeKey.GroupDetailPage, new Dictionary<string, string>
                 {
-                    placementGroupName += string.Format( " ({0}{1}{2})",
-                        statusName,
-                        !string.IsNullOrWhiteSpace( roleName ) && !string.IsNullOrWhiteSpace( statusName ) ? " " : "",
-                        roleName );
+                    { "GroupId", connectionRequest.AssignedGroup.Id.ToString() }
+                } );
+
+                placementGroupHtml = string.Format("<a href=\"{0}\">{1}</a>", groupDetailPageUrl, viewModel.GroupName);
+
+                if ( viewModel.PlacementGroupRoleId.HasValue )
+                {
+                    var rockContext = new RockContext();
+                    var service = new GroupTypeRoleService( rockContext );
+                    var role = service.Get( viewModel.PlacementGroupRoleId.Value );
+
+                    var roleName = role != null ? role.Name : string.Empty;
+                    var statusName = viewModel.PlacementGroupMemberStatus.ConvertToStringSafe();
+
+                    if ( !string.IsNullOrWhiteSpace( roleName ) || !string.IsNullOrWhiteSpace( statusName ) )
+                    {
+                        placementGroupHtml += string.Format( " ({0}{1}{2})",
+                            statusName,
+                            !string.IsNullOrWhiteSpace( roleName ) && !string.IsNullOrWhiteSpace( statusName ) ? " " : "",
+                            roleName );
+                    }
                 }
             }
 
-            rightDescList.Add( "Placement Group", placementGroupName );
+            rightDescList.Add( "Placement Group", placementGroupHtml );
 
             lRequestModalViewModeSideDescription.Text = rightDescList.Html;
 
@@ -818,6 +923,9 @@ namespace RockWeb.Blocks.Connection
 
             // Attributes
             avcRequestModalViewModeAttributesReadOnly.AddDisplayControls( connectionRequest, Authorization.VIEW, CurrentPerson );
+
+            // Badge bar
+            BindModalViewModeBadges();
 
             // Bind the connectors button dropdown
             BindModalViewModeConnectorOptions();
@@ -841,7 +949,7 @@ namespace RockWeb.Blocks.Connection
                 } ).ToList();
                 ddlRequestModalViewModeAddActivityModeType.DataBind();
                 BindConnectorOptions( ddlRequestModalViewModeAddActivityModeConnector, true, viewModel.CampusId, connectorPersonAliasId );
-                
+
                 // Bind edit mode if appropriate
                 if ( activity != null )
                 {
@@ -2612,6 +2720,32 @@ namespace RockWeb.Blocks.Connection
         #region Request Modal View-Mode
 
         /// <summary>
+        /// Binds the modal view mode badges.
+        /// </summary>
+        private void BindModalViewModeBadges()
+        {
+            var delimitedBadgeGuids = GetAttributeValue( AttributeKey.Badges );
+
+            if ( delimitedBadgeGuids.IsNullOrWhiteSpace() )
+            {
+                blRequestModalViewModeBadges.Visible = false;
+                return;
+            }
+
+            // The badge bar relies on the Context Entity to render the badges
+            Entity = GetRequesterPerson();
+
+            // Add the badge types to the badge list control
+            var badgeTypes = delimitedBadgeGuids.SplitDelimitedValues()
+                .AsGuidList()
+                .Select( BadgeCache.Get )
+                .ToList();
+
+            blRequestModalViewModeBadges.BadgeTypes = badgeTypes;
+            blRequestModalViewModeBadges.Visible = true;
+        }
+
+        /// <summary>
         /// Binds the modal connector options.
         /// </summary>
         private void BindModalViewModeConnectorOptions()
@@ -4076,6 +4210,32 @@ namespace RockWeb.Blocks.Connection
             return _connectionRequestViewModel;
         }
         private ConnectionRequestViewModel _connectionRequestViewModel = null;
+
+        /// <summary>
+        /// Gets the requester person.
+        /// </summary>
+        /// <returns></returns>
+        private Person GetRequesterPerson()
+        {
+            var viewModel = GetConnectionRequestViewModel();
+
+            if ( viewModel == null )
+            {
+                _requesterPerson = null;
+                return null;
+            }
+
+            if ( _requesterPerson != null && _requesterPerson.Id == viewModel.PersonId )
+            {
+                return _requesterPerson;
+            }
+
+            var rockContext = new RockContext();
+            var personService = new PersonService( rockContext );
+            _requesterPerson = personService.Get( viewModel.PersonId );
+            return _requesterPerson;
+        }
+        private Person _requesterPerson = null;
 
         /// <summary>
         /// Gets the connection request.

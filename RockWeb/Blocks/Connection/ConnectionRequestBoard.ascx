@@ -387,6 +387,7 @@
 
 <asp:UpdatePanel ID="upnlRoot" runat="server" UpdateMode="Conditional">
     <ContentTemplate>
+
         <asp:UpdatePanel ID="upnlBlockLevelControls" runat="server">
             <ContentTemplate>
                 <asp:LinkButton ID="lbCardCommand" runat="server" CssClass="hidden" />
@@ -646,7 +647,13 @@
                                                 <ul class="list-unstyled phonenumbers mb-1">
                                                     <asp:Repeater ID="rRequestModalViewModePhones" runat="server">
                                                         <ItemTemplate>
-                                                            <li><%# Eval("FormattedPhoneNumber") %> <small><%# Eval("PhoneType") %></small></li>
+                                                            <li>
+                                                                <%# Eval("FormattedPhoneNumber") %>
+                                                                <small>
+                                                                    <%# Eval("PhoneType") %>
+                                                                    <%# Eval("SmsLinkHtml") %>
+                                                                </small>
+                                                            </li>
                                                         </ItemTemplate>
                                                     </asp:Repeater>
                                                 </ul>
@@ -682,6 +689,10 @@
                                             </div>
                                         </div>
 
+                                    </div>
+
+                                    <div class="badge-bar margin-b-sm">
+                                        <Rock:BadgeListControl ID="blRequestModalViewModeBadges" runat="server" />
                                     </div>
                                 </div>
 

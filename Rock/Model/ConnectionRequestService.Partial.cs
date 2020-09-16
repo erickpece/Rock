@@ -324,7 +324,8 @@ namespace Rock.Model
                     PersonPhones = cr.PersonAlias.Person.PhoneNumbers.Select( pn => new ConnectionRequestViewModel.PhoneViewModel
                     {
                         PhoneType = pn.NumberTypeValue.Value,
-                        FormattedPhoneNumber = pn.NumberFormatted
+                        FormattedPhoneNumber = pn.NumberFormatted,
+                        IsMessagingEnabled = pn.IsMessagingEnabled
                     } ).ToList(),
                     CampusId = cr.CampusId,
                     CampusName = cr.Campus.Name,
@@ -1182,7 +1183,7 @@ namespace Rock.Model
         /// <summary>
         /// Phone View Model
         /// </summary>
-        public class PhoneViewModel
+        public sealed class PhoneViewModel
         {
             /// <summary>
             /// Gets or sets the type of the phone.
@@ -1193,6 +1194,11 @@ namespace Rock.Model
             /// Gets or sets the formatted phone number.
             /// </summary>
             public string FormattedPhoneNumber { get; set; }
+
+            /// <summary>
+            /// Gets or sets a value indicating whether this instance is messaging enabled.
+            /// </summary>
+            public bool IsMessagingEnabled { get; set; }
         }
     }
 
